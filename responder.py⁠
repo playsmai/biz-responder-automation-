@@ -1,0 +1,33 @@
+# Day 1: Bare-bones basic prototype for the challenge
+import json
+
+def process_customer_message(message_text):
+    text = message_text.lower()
+    
+    # Rigid keyword matching
+    if "price" in text or "cost" in text:
+        category = "Pricing Inquiry"
+        response = "Hello! Thanks for reaching out. Our price list is available upon request."
+    elif "location" in text or "shop" in text:
+        category = "Location Inquiry"
+        response = "Hello! Our main physical shop is located in Oyo State, Nigeria."
+    elif "order" in text or "track" in text:
+        category = "Order Status"
+        response = "Hello! Please send your order ID so we can track it for you."
+    else:
+        category = "General"
+        response = "Hello! Thank you for your message. A representative will reply soon."
+        
+    return {
+        "category": category,
+        "suggested_reply": response
+    }
+
+if __name__ == "__main__":
+    sample_message = "Hello, where is your shop located?"
+    result = process_customer_message(sample_message)
+    
+    print("--- Test Run ---")
+    print(f"Incoming: {sample_message}")
+    print(f"Category: {result['category']}")
+    print(f"Response: {result['suggested_reply']}")
