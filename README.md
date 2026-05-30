@@ -1,2 +1,93 @@
-# biz-responder-automation-
-An automated customer inquiry classification and auto-response backend utility with structured SQLite database logging and error-handling capabilities. Built for the DEV Community Challenge.
+import sqlite3
+from datetime import datetime
+import json
+
+# 1. Database Initialization Logic
+def init_database():
+    """Creates a local SQLite database to log customer inquiries for business analytics."""
+    try:
+        conn = sqlite3.connect("analytics.db")
+        cursor = conn.cursor()
+        # Create table if it doesn't exist yet
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS message_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                incoming_message TEXT NOT NULL,
+                assigned_category TEXT NOT NULL,
+                status TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Database Initialization Error: {e}")
+
+# 2. Production-Grade Log System
+def log_to_database(message, category):
+    """Safely records interaction logs into the SQLite tracking database."""
+    try:
+        conn = sqlite3.connect("analytics.db")
+        cursor = conn.cursor()
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        cursor.execute("""
+            INSERT INTO message_logs (timestamp, incoming_message, assigned_category, status)
+            VALUES (?, ?, ?, ?)
+        """, (current_time, message, category, "Processed"))
+        
+        conn.commit()
+        conn.close()
+        print("[SUCCESS] Transaction successfully logged to analytics.db")
+    except sqlite3.Error as database_error:
+        print(f"[ERROR] Failed to log transaction to SQLite: {database_error}")
+
+# 3. Upgraded Classification Core
+def process_customer_message_advanced(message_text):
+    """Processes incoming strings, catches structural faults, and assigns replies."""
+    # Defend against non-string input data or empty values
+    if not message_text or not isinstance(message_text, str):
+        return {
+            "category": "System Error",
+            "suggested_reply": "Error: Invalid message format received."
+        }
+        
+    text = message_text.lower().strip()
+    
+    # Advanced matching checks
+    if any(word in text for word in ["price", "cost", "how much", "amount"]):
+        category = "Pricing Inquiry"
+        response = "Hello! Thanks for reaching out. Our price list is available upon request."
+    elif any(word in text for word in ["location", "shop", "office", "where"]):
+        category = "Location Inquiry"
+        response = "Hello! Our main physical shop is located in Oyo State, Nigeria."
+    elif any(word in text for word in ["order", "track", "delivery", "ship"]):
+        category = "Order Status"
+        response = "Hello! Please send your order ID so we can track it for you."
+    else:
+        category = "General"
+        response = "Hello! Thank you for your message. A representative will reply soon."
+        
+    # Trigger database storage action safely
+    log_to_database(message_text, category)
+        
+    return {
+        "category": category,
+        "suggested_reply": response
+    }
+
+if __name__ == "__main__":
+    # Ensure database infrastructure is built first
+    init_database()
+    
+    print("--- Running Advanced Production Engine ---")
+    
+    # Simulation 1: Standard Check
+    test_msg_1 = "How much does it cost?"
+    res_1 = process_customer_message_advanced(test_msg_1)
+    print(f"Result 1 Category: {res_1['category']}\n")
+    
+    # Simulation 2: Fault Tolerance Check (empty input handles smoothly without crashing)
+    test_msg_2 = None
+    res_2 = process_customer_message_advanced(test_msg_2)
+    print(f"Result 2 Category: {res_2['category']}")
