@@ -1,22 +1,71 @@
-# Day 1: Bare-bones basic prototype for the challenge
-import json
+import sqlite3
+from datetime import datetime
 
-def process_customer_message(message_text):
-    text = message_text.lower()
+# 1. Database Initialization Logic
+def init_database():
+    """Creates a local SQLite database to log customer inquiries for business analytics."""
+    try:
+        conn = sqlite3.connect("analytics.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS message_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                incoming_message TEXT NOT NULL,
+                assigned_category TEXT NOT NULL,
+                status TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Database Initialization Error: {e}")
+
+# 2. Production-Grade Log System
+def log_to_database(message, category):
+    """Safely records interaction logs into the SQLite tracking database."""
+    try:
+        conn = sqlite3.connect("analytics.db")
+        cursor = conn.cursor()
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        cursor.execute("""
+            INSERT INTO message_logs (timestamp, incoming_message, assigned_category, status)
+            VALUES (?, ?, ?, ?)
+        """, (current_time, message, category, "Processed"))
+        
+        conn.commit()
+        conn.close()
+        print("[SUCCESS] Transaction successfully logged to analytics.db")
+    except sqlite3.Error as database_error:
+        print(f"[ERROR] Failed to log transaction to SQLite: {database_error}")
+
+# 3. Upgraded Classification Core
+def process_customer_message_advanced(message_text):
+    """Processes incoming strings, catches structural faults, and assigns replies."""
+    if not message_text or not isinstance(message_text, str):
+        return {
+            "category": "System Error",
+            "suggested_reply": "Error: Invalid message format received."
+        }
+        
+    text = message_text.lower().strip()
     
-    # Rigid keyword matching
-    if "price" in text or "cost" in text:
+    # Advanced matching checks
+    if any(word in text for word in ["price", "cost", "how much", "amount"]):
         category = "Pricing Inquiry"
         response = "Hello! Thanks for reaching out. Our price list is available upon request."
-    elif "location" in text or "shop" in text:
+    elif any(word in text for word in ["location", "shop", "office", "where"]):
         category = "Location Inquiry"
         response = "Hello! Our main physical shop is located in Oyo State, Nigeria."
-    elif "order" in text or "track" in text:
+    elif any(word in text for word in ["order", "track", "delivery", "ship"]):
         category = "Order Status"
         response = "Hello! Please send your order ID so we can track it for you."
     else:
         category = "General"
         response = "Hello! Thank you for your message. A representative will reply soon."
+        
+    log_to_database(message_text, category)
         
     return {
         "category": category,
@@ -24,10 +73,13 @@ def process_customer_message(message_text):
     }
 
 if __name__ == "__main__":
-    sample_message = "Hello, where is your shop located?"
-    result = process_customer_message(sample_message)
+    init_database()
+    print("--- Running Advanced Production Engine ---")
     
-    print("--- Test Run ---")
-    print(f"Incoming: {sample_message}")
-    print(f"Category: {result['category']}")
-    print(f"Response: {result['suggested_reply']}")
+    test_msg_1 = "How much does it cost?"
+    res_1 = process_customer_message_advanced(test_msg_1)
+    print(f"Result 1 Category: {res_1['category']}\n")
+    
+    test_msg_2 = None
+    res_2 = process_customer_message_advanced(test_msg_2)
+    print(f"Result 2 Category: {res_2['category']}")
